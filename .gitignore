@@ -2,3 +2,4 @@ mails/
 node_modules/
 dist/
 .env
+contents.json
