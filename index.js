@@ -11,9 +11,30 @@ const ALLOWED_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com',
 const GMAIL_USER = process.env.GMAIL_USER || 'your-email@gmail.com';
 const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD || 'your-app-password';
 
-// Email message configuration
-const EMAIL_SUBJECT = 'Hello from Mail Sender';
-const EMAIL_BODY = 'This is an automated email. Please do not reply.';
+/**
+ * Load email subject and body from contents.json
+ */
+function loadEmailContents() {
+  try {
+    const contentsPath = path.join(__dirname, 'contents.json');
+    const data = fs.readFileSync(contentsPath, 'utf8');
+    const contents = JSON.parse(data);
+    
+    if (!contents.title || !contents.content) {
+      throw new Error('contents.json must contain "title" and "content" fields');
+    }
+    
+    return {
+      subject: contents.title,
+      body: contents.content
+    };
+  } catch (error) {
+    console.error('❌ Error reading contents.json:', error.message);
+    console.log('\nPlease create a contents.json file with the following structure:');
+    console.log('{\n  "title": "Email Subject",\n  "content": "Email Body"\n}');
+    process.exit(1);
+  }
+}
 
 /**
  * Check if email domain is allowed
@@ -66,6 +87,11 @@ function getJsonFiles(mailsDir) {
  */
 async function sendEmails() {
   console.log('🚀 Starting mail sender...\n');
+
+  // Load email contents
+  const emailContents = loadEmailContents();
+  const EMAIL_SUBJECT = emailContents.subject;
+  const EMAIL_BODY = emailContents.body;
 
   // Validate credentials
   if (GMAIL_USER === 'your-email@gmail.com' || GMAIL_APP_PASSWORD === 'your-app-password') {
@@ -120,11 +146,14 @@ async function sendEmails() {
     return;
   }
 
-  // Send emails
+  // Send emails with 5 minute delay between each
   let successCount = 0;
   let failureCount = 0;
+  const DELAY_BETWEEN_EMAILS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
-  for (const email of allEmails) {
+  for (let i = 0; i < allEmails.length; i++) {
+    const email = allEmails[i];
+    
     try {
       await transporter.sendMail({
         from: GMAIL_USER,
@@ -138,6 +167,13 @@ async function sendEmails() {
     } catch (error) {
       console.error(`❌ Failed to send email to ${email}: ${error.message}`);
       failureCount++;
+    }
+
+    // Wait 5 minutes before sending the next email (except for the last one)
+    if (i < allEmails.length - 1) {
+      const nextSendTime = new Date(Date.now() + DELAY_BETWEEN_EMAILS);
+      console.log(`⏳ Waiting 5 minutes... Next email at ${nextSendTime.toLocaleTimeString()}\n`);
+      await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_EMAILS));
     }
   }
 
