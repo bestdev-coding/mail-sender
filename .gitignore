@@ -1,0 +1,4 @@
+mails/
+node_modules/
+dist/
+.env

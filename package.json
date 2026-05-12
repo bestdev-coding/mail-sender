@@ -1,0 +1,12 @@
+{
+  "name": "mail-sender",
+  "version": "1.0.0",
+  "description": "Send mails automatically",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
